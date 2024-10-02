@@ -1,0 +1,158 @@
+---
+title: "Etapa2"
+author: "Carlos Cuéllar Solís"
+date: "2024-09-30"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Equipo 7
+Anton De la  Garza Tamez - A01178310
+Arturo Camacho Apolonio - A00838446
+Carlos Cuéllar Solís - A01571619
+Diego Octavio Arias Incháustegui - A00838285
+Jorge Alfonso Andujo Valdez - A01563535
+
+25 de septiembre del 2024
+
+Gpo 204
+
+## Instalación de Paquetes
+
+install.packages("dplyr")
+install.packages("ggplot2")
+install.packages("e1071")
+
+```{r, echo=FALSE}
+install_if_needed <- function(package) {
+  if (!requireNamespace(package, quietly = TRUE)) {
+    install.packages(package)
+  }
+}
+
+install_if_needed("dplyr")
+install_if_needed("ggplot2")
+install_if_needed("e1071")
+
+library(dplyr)
+library(ggplot2)
+library(e1071)
+```
+
+## Parte 1:
+
+- Dimensión del dataset
+
+```{r, echo=FALSE}
+M22 <- read.csv("Datos_molec_2022.csv")
+
+View(M22)
+
+print(dim(M22))
+```
+
+- Limpieza base de datos
+
+```{r, echo=FALSE}
+M22_limpia <- M22[!duplicated(M22), ]
+
+M22_limpia <- na.omit(M22_limpia)
+
+View(M22_limpia)
+```
+
+## Parte 2
+
+- Medidas estadísticas
+
+```{r, echo=FALSE}
+M22_limpia$sexo <- as.numeric(M22_limpia$sexo)
+M22_limpia$edad <- as.numeric(M22_limpia$edad)
+M22_limpia$nivel <- as.numeric(M22_limpia$nivel)
+M22_limpia$anio <- as.numeric(M22_limpia$anio)
+M22_limpia$h_lec <- as.numeric(M22_limpia$h_lec)
+M22_limpia$mat_lec <- as.numeric(M22_limpia$mat_lec)
+
+variables <- c("sexo", "edad", "nivel", "anio", "h_lec", "mat_lec")
+
+obtener_medidas <- function(variable) {
+  media <- mean(variable, na.rm = TRUE)
+  mediana <- median(variable, na.rm = TRUE)
+  rango_medio <- (max(variable, na.rm = TRUE) + min(variable, na.rm = TRUE)) / 2
+  desviacion_estandar <- sd(variable, na.rm = TRUE)
+  coeficiente_variacion <- (desviacion_estandar / media) * 100
+  cuartiles <- quantile(variable, probs = c(0.25, 0.5, 0.75), na.rm = TRUE)
+  sesgo <- skewness(variable, na.rm = TRUE)
+  curtosis <- kurtosis(variable, na.rm = TRUE)
+  
+  return(list(
+    "Media" = media,
+    "Mediana" = mediana,
+    "Rango medio" = rango_medio,
+    "Desviación estándar" = desviacion_estandar,
+    "Coeficiente de variación (%)" = coeficiente_variacion,
+    "Cuartiles" = cuartiles,
+    "Sesgo" = sesgo,
+    "Curtosis" = curtosis
+  ))
+}
+
+resultados <- lapply(M22_limpia[variables], obtener_medidas)
+
+print(resultados)
+```
+
+- Exploración de datos
+
+```{r, echo=FALSE}
+#Diagram de Pastel
+sexo_data <- table(M22_limpia$sexo)
+
+p_pie <- ggplot(as.data.frame(sexo_data), aes(x = "", y = Freq, fill = Var1)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y") +
+  labs(title = "Diagrama de pastel de sexo") +
+  theme_void()
+
+print(p_pie)
+
+# Histograma (edad, nivel, anio, h_lec, y mat_lec)
+vars <- M22_limpia[, c("edad", "nivel", "anio", "h_lec", "mat_lec")]
+
+for (col in names(vars)) {
+  p <- ggplot(M22_limpia, aes_string(x = col)) + 
+    geom_histogram(binwidth = 5, fill = "lightblue", color = "black", alpha = 0.7) +
+    labs(title = paste("Histograma de", col), x = col, y = "Frecuencia") +
+    theme_minimal()
+  
+  print(p)
+}
+
+# Boxplots (edad, nivel, anio, h_lec, y mat_lec)
+for (col in names(vars)) {
+  p <- ggplot(M22_limpia, aes_string(x = col)) + 
+    geom_boxplot() +
+    labs(title = paste("Boxplot de", col), x = col, y = "Valores") +
+    theme_minimal()
+  
+  print(p)
+}
+
+# Correlación
+correlaciones <- data.frame(
+  Variable1 = c("sexo", "edad", "nivel", "anio", "mat_lec"),
+  Correlacion_con_h_lec = c(
+    cor(M22_limpia$sexo, M22_limpia$h_lec, use = "complete.obs"),
+    cor(M22_limpia$edad, M22_limpia$h_lec, use = "complete.obs"),
+    cor(M22_limpia$nivel, M22_limpia$h_lec, use = "complete.obs"),
+    cor(M22_limpia$anio, M22_limpia$h_lec, use = "complete.obs"),
+    cor(M22_limpia$mat_lec, M22_limpia$h_lec, use = "complete.obs")
+  )
+)
+
+print(correlaciones)
+```
+
